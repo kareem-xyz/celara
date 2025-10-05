@@ -1,0 +1,23 @@
+# Core Framework
+flask==3.0.0
+werkzeug==3.0.1
+
+# Machine Learning
+tensorflow==2.15.0
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.0
+
+# Astronomy & Data Processing
+lightkurve==2.4.2
+scipy==1.11.3
+
+# Visualization
+matplotlib==3.8.0
+
+# Utilities
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Optional: Progress bars
+tqdm==4.66.1

@@ -1,0 +1,111 @@
+# Astronet 2.0 — Multi-Modal ResNet (36-Hour Hackathon Plan)
+
+**Goal:** Build a high-impact, scientifically credible exoplanet classifier that improves upon Astronet, while remaining feasible for a solo hackathon. Focus on 1D CNNs with ResNet blocks, multi-modal inputs, and uncertainty quantification. Skip Transformers to reduce debugging complexity and GPU load.
+
+---
+
+## Libraries / Tools
+- **Data Handling:** `pandas`, `numpy`, `lightkurve`  
+- **Neural Network:** `torch` or `tensorflow`/`keras`  
+- **Evaluation:** `sklearn.metrics`, `matplotlib`  
+
+---
+
+## Step 1: Data Loading & Setup
+- Focus on **one mission** (e.g., Kepler or TESS).  
+- Load light curves with `lightkurve`.  
+- Load **auxiliary features**:  
+  - Stellar parameters: radius (R\*), effective temperature (Teff)  
+  - Detection metrics: period (P), epoch (T0), SNR, transit duration  
+
+**Critique Note:** Use fallback for missing periods; train on normalized sequences if folding fails.  
+
+---
+
+## Step 2: Preprocessing & Normalization
+- Normalize flux (median=1).  
+- Detrend with **Savitzky-Golay filter** or `lightkurve.flatten()`.  
+- Optional: binary gap masking.  
+
+**Critique Note:** Keep preprocessing lightweight to avoid delays; don’t implement GP detrending.  
+
+---
+
+## Step 3: Feature Engineering
+- **Local View:** Phase-fold ±2 transit durations (binned, e.g., 201 bins).  
+- **Global View:** Phase-fold over full orbit (binned, e.g., 2001 bins).  
+- **Aux Features:** Normalize scalar features (Teff, SNR, period, radius).  
+
+**Critique Note:** Start with labeled data; synthetic injections are optional if time permits.  
+
+---
+
+## Step 4: Model Definition (Core Improvement)
+- **Architecture:** Multi-input CNN with 1D ResNet blocks + late fusion of Local, Global, and Aux pathways.  
+
+1. **ResNet Block (1D):** Conv1D → BatchNorm → ReLU → Conv1D → BatchNorm + skip connection → ReLU  
+2. **Local Pathway:** 3–5 ResNet blocks → GAP → Feature_Vector_L  
+3. **Global Pathway:** 5–8 ResNet blocks → GAP → Feature_Vector_G  
+4. **Aux Pathway:** 1–2 Dense layers → Feature_Vector_A  
+5. **Fusion:** Concatenate vectors → Dense layers → Sigmoid output (`p_planet`)  
+6. **MC Dropout:** Include p=0.3 dropout in fusion network for uncertainty  
+
+**Critique Note:** Keep ResNet depth manageable; batch sizes small for CPU/GPU constraints.  
+
+---
+
+## Step 5: Training Setup
+- **Loss:** Focal Loss (handles class imbalance)  
+- **Optimizer:** AdamW  
+- **Scheduler:** OneCycleLR or cosine decay  
+- **Hyperparameters:** Minimal tuning; 1–2 learning rates, 1 dropout value  
+
+**Critique Note:** Early stopping is crucial; small prototype (200–500 stars) recommended first.  
+
+---
+
+## Step 6: Evaluation & Uncertainty
+- **Primary Metric:** PR-AUC (Average Precision)  
+- **MC Dropout:** Forward N=20–30 times per sample → mean = prediction, std = uncertainty  
+
+**Critique Note:** Batch evaluation of MC dropout improves speed; full 50 passes may be slow.  
+
+---
+
+## Suggested 36-Hour Timeline
+
+| Phase | Hours | Tasks |
+|-------|-------|-------|
+| Phase 1 | 0–12 | Setup environment, load data & metadata, normalize flux, detrend, compute Local/Global views, standardize aux features, create DataLoaders |
+| Phase 2 | 12–24 | Implement ResNet blocks, multi-input pathways, Fusion network, MC Dropout; initial training, debug, ensure loss decreases |
+| Sleep | 4–6h | Take a break to avoid last-minute crashes |
+| Phase 3 | 24–36 | Full training, hyperparameter tuning, MC Dropout evaluation, visualize high-confidence candidates, prepare presentation |
+
+---
+
+## Strengths
+- Feasible, high-impact architecture; avoids Transformer complexity.  
+- Multi-modal fusion boosts performance with minimal compute.  
+- Focal loss efficiently handles extreme class imbalance.  
+- MC Dropout provides uncertainty estimates — a judge-friendly “wow” factor.  
+- Timeline is realistic for a solo 36-hour hackathon.  
+
+---
+
+## Risks / Bottlenecks
+- Phase-folding may fail if period information is missing → fallback required.  
+- Deep ResNets may be slow on CPU / integrated GPU → keep batch sizes small.  
+- MC Dropout runtime could be long → reduce N to 20–30 for hackathon speed.  
+- Hyperparameter tuning must be minimal — stick to one schedule, dropout, and 1–2 learning rates.  
+
+---
+
+## Tactical Improvements
+- Use pretrained Astronet weights for fast convergence if time is tight.  
+- Prototype on small subset before full-scale training.  
+- Batch MC Dropout evaluation for efficiency.  
+
+---
+
+**Verdict:**  
+This plan is **realistic, hackathon-friendly, and scientifically credible**. It maximizes high-impact improvements while remaining feasible for one person in 36 hours. It targets **robust predictions + uncertainty**, without overcomplicating architecture or compute requirements.  
