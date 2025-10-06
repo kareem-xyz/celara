@@ -1,91 +1,135 @@
-# AstroNet + Simple ResNet - Best of both worlds
 import tensorflow as tf
-from tensorflow.keras import layers, Model, optimizers
+import numpy as np
+from tensorflow.keras import layers, Model, optimizers, callbacks
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 
-def simple_resnet_block(x, filters, kernel_size=5):
-    """Simple 1D ResNet block - just the essentials"""
-    # Main path
+def simple_resnet_block(x, filters, kernel_size=3, dropout=0.1):
+    """Simple ResNet block with batch norm and dropout"""
     shortcut = x
-    x = layers.Conv1D(filters, kernel_size, padding='same', activation='relu')(x)
-    x = layers.Conv1D(filters, kernel_size, padding='same')(x)
     
-    # Skip connection (adjust channels if needed)
+    x = layers.Conv1D(filters, kernel_size, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.ReLU()(x)
+    x = layers.Dropout(dropout)(x)
+    
+    x = layers.Conv1D(filters, kernel_size, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    
     if shortcut.shape[-1] != filters:
         shortcut = layers.Conv1D(filters, 1, padding='same')(shortcut)
+        shortcut = layers.BatchNormalization()(shortcut)
     
-    # Add and activate
     x = layers.Add()([x, shortcut])
     x = layers.ReLU()(x)
     return x
 
-def create_astronet_resnet_trimodal():
-    """
-    Lightweight AstroNet + ResNet hybrid - Much more parameter efficient!
+def create_simple_resnet_trimodal():
+    """ResNet CNN for exoplanet detection - targeting ~2M parameters"""
     
-    - Uses Global Average Pooling instead of huge flattened layers
-    - Aggressive downsampling to reduce feature maps
-    - Smaller dense layers for classification
-    - Should be ~500K parameters instead of 9M!
-    """
-    
-    # ===== LOCAL VIEW (201 features - transit region) =====
+    # LOCAL VIEW - More depth and wider channels
     local_input = layers.Input(shape=(201,), name='local_view')
     local_x = layers.Reshape((201, 1))(local_input)
     
-    # Initial conv with aggressive downsampling
-    local_x = layers.Conv1D(16, 5, padding='same', activation='relu')(local_x)
-    local_x = layers.MaxPooling1D(5, strides=5)(local_x)  # ~40 length
+    local_x = layers.Conv1D(64, 5, padding='same', activation='relu')(local_x)
+    local_x = layers.BatchNormalization()(local_x)
+    local_x = layers.MaxPooling1D(2)(local_x)
     
-    # Simple ResNet blocks
-    local_x = simple_resnet_block(local_x, 32)
-    local_x = layers.MaxPooling1D(4, strides=4)(local_x)  # ~10 length
+    # Multiple ResNet blocks with increasing depth
+    local_x = simple_resnet_block(local_x, 64, kernel_size=5, dropout=0.1)
+    local_x = simple_resnet_block(local_x, 64, kernel_size=5, dropout=0.1)
+    local_x = layers.MaxPooling1D(2)(local_x)
     
-    # Global Average Pooling instead of flatten (HUGE parameter reduction!)
-    local_features = layers.GlobalAveragePooling1D()(local_x)  # Just 32 features!
+    local_x = simple_resnet_block(local_x, 128, kernel_size=3, dropout=0.1)
+    local_x = simple_resnet_block(local_x, 128, kernel_size=3, dropout=0.1)
+    local_x = layers.MaxPooling1D(2)(local_x)
     
-    # ===== GLOBAL VIEW (2001 features - full orbital period) =====
+    local_x = simple_resnet_block(local_x, 256, kernel_size=3, dropout=0.2)
+    local_x = simple_resnet_block(local_x, 256, kernel_size=3, dropout=0.2)
+    local_x = layers.GlobalAveragePooling1D()(local_x)
+    
+    # GLOBAL VIEW - More depth and wider channels
     global_input = layers.Input(shape=(2001,), name='global_view')
     global_x = layers.Reshape((2001, 1))(global_input)
     
-    # Aggressive initial downsampling
-    global_x = layers.Conv1D(16, 5, padding='same', activation='relu')(global_x)
-    global_x = layers.MaxPooling1D(10, strides=10)(global_x)  # ~200 length
+    global_x = layers.Conv1D(64, 7, padding='same', activation='relu')(global_x)
+    global_x = layers.BatchNormalization()(global_x)
+    global_x = layers.MaxPooling1D(5)(global_x)
     
-    # Progressive ResNet blocks with downsampling
-    global_x = simple_resnet_block(global_x, 32)
-    global_x = layers.MaxPooling1D(5, strides=5)(global_x)  # ~40 length
+    global_x = simple_resnet_block(global_x, 64, kernel_size=5, dropout=0.1)
+    global_x = simple_resnet_block(global_x, 64, kernel_size=5, dropout=0.1)
+    global_x = layers.MaxPooling1D(4)(global_x)
     
-    global_x = simple_resnet_block(global_x, 64)
-    global_x = layers.MaxPooling1D(4, strides=4)(global_x)  # ~10 length
+    global_x = simple_resnet_block(global_x, 128, kernel_size=3, dropout=0.1)
+    global_x = simple_resnet_block(global_x, 128, kernel_size=3, dropout=0.1)
+    global_x = layers.MaxPooling1D(4)(global_x)
     
-    # Global Average Pooling (massive parameter reduction!)
-    global_features = layers.GlobalAveragePooling1D()(global_x)  # Just 64 features!
+    global_x = simple_resnet_block(global_x, 256, kernel_size=3, dropout=0.2)
+    global_x = simple_resnet_block(global_x, 256, kernel_size=3, dropout=0.2)
+    global_x = layers.GlobalAveragePooling1D()(global_x)
     
-    # ===== AUXILIARY FEATURES (4 stellar parameters) =====
+    # AUXILIARY FEATURES - Expanded network
     aux_input = layers.Input(shape=(4,), name='aux_features')
-    aux_features = layers.Dense(8, activation='relu')(aux_input)  # Keep it simple
+    aux_x = layers.Dense(64, activation='relu')(aux_input)
+    aux_x = layers.BatchNormalization()(aux_x)
+    aux_x = layers.Dense(128, activation='relu')(aux_x)
+    aux_x = layers.BatchNormalization()(aux_x)
+    aux_features = layers.Dense(256, activation='relu')(aux_x)
     
-    # ===== CLASSIFICATION HEAD =====
-    # Concatenate: 32 (local) + 64 (global) + 8 (aux) = 104 features total
-    combined = layers.Concatenate()([local_features, global_features, aux_features])
+    # FEATURE FUSION - Larger combined feature space
+    # 256 (local) + 256 (global) + 256 (aux) = 768 features
+    combined = layers.Concatenate()([local_x, global_x, aux_features])
     
-    # Much smaller dense layers
-    x = layers.Dense(128, activation='relu')(combined)  # 104 -> 128
-    x = layers.Dropout(0.5)(x)
-    x = layers.Dense(64, activation='relu')(x)          # 128 -> 64
+    # CLASSIFICATION HEAD - Deeper and wider
+    x = layers.Dense(512, activation='relu')(combined)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.4)(x)
+    
+    x = layers.Dense(256, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.3)(x)
     
-    # Output layer
-    output = layers.Dense(1, activation='sigmoid', name='planet_probability')(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
     
-    # Create model with 3 inputs
+    output = layers.Dense(1, activation='sigmoid', name='exoplanet_probability')(x)
+    
     model = Model(
         inputs=[local_input, global_input, aux_input],
         outputs=output,
-        name='AstroNet_ResNet_Lightweight'
+        name='ResNet_Exoplanet_2M'
     )
     
     return model
+
+def get_simple_callbacks(model_path='models/keras/simple_resnet_model.keras', 
+                         patience=15, factor=0.5, min_lr=1e-6):
+    """Simple callbacks for training"""
+    callback_list = [
+        callbacks.EarlyStopping(
+            monitor='val_accuracy',
+            patience=patience,
+            restore_best_weights=True,
+            mode='max',
+            verbose=1
+        ),
+        callbacks.ModelCheckpoint(
+            model_path,
+            monitor='val_accuracy',
+            save_best_only=True,
+            mode='max',
+            verbose=1,
+            save_weights_only=False
+        ),
+        callbacks.ReduceLROnPlateau(
+            monitor='val_accuracy',
+            factor=factor,
+            patience=patience//3,
+            min_lr=min_lr,
+            mode='max',
+            verbose=1
+        )
+    ]
+    
+    return callback_list

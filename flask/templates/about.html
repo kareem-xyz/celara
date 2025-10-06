@@ -1,0 +1,138 @@
+{% extends "layout.html" %}
+
+{% block title %}About - Celara{% endblock %}
+
+{% block subtitle %}{% endblock %}
+
+{% block content %}
+<!-- About Me Section -->
+<div class="row align-items-start mb-5">
+    <div class="col-md-3 text-center mb-4">
+        <img src="https://github.com/kareem-xyz.png" 
+             alt="Kareem's GitHub Profile" 
+             class="img-fluid rounded-circle mb-3"
+             style="width: 150px; height: 150px; border: 3px solid rgba(74, 158, 255, 0.3); box-shadow: 0 4px 15px rgba(74, 158, 255, 0.2);">
+        <h4 class="text-primary">Kareem Ahmed</h4>
+        <p class="text-muted small">EE/CompE Student</p>
+        <div class="d-flex flex-column gap-2">
+            <a href="https://github.com/kareem-xyz" target="_blank" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-github"></i> GitHub
+            </a>
+            <a href="https://linkedin.com/in/ahmedke" target="_blank" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-linkedin"></i> LinkedIn
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <h3 class="mb-4"><i class="bi bi-person-circle"></i> About Me</h3>
+        
+        <p class="lead mb-4">
+            Hi! I'm Kareem, an Electrical Engineering and Computer Engineering student with a passion for combining 
+            technology with space exploration and scientific discovery.
+        </p>
+        
+        <p class="mb-4">
+            I love working on projects that bridge different fields - in this case, bringing together machine learning, 
+            astronomy, and web development. When I'm not coding, you can find me reading about space missions, 
+            experimenting with new programming frameworks, or working on electronics projects.
+        </p>
+        
+        <p class="mb-4">
+            Celara represents my interest in using artificial intelligence to solve real scientific problems. 
+            It's exciting to think that the same techniques used in everyday apps can help us discover new worlds 
+            orbiting distant stars!
+        </p>
+    </div>
+</div>
+
+<hr class="my-5" style="border-color: rgba(74, 158, 255, 0.3);">
+
+<!-- About Celara Section -->
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-4">About Celara</h3>
+        
+        <!-- What is Celara? (Beginner-friendly) -->
+        <h4 class="mt-4 mb-3"><i class="bi bi-question-circle"></i> What is Celara?</h4>
+        
+        <p class="mb-4">
+            <strong>Think of Celara as a smart detective for finding planets around other stars.</strong> 
+            Just like how a detective looks for clues to solve a case, Celara looks for tiny patterns in starlight 
+            that might indicate a planet is passing in front of the star.
+        </p>
+        
+        <p class="mb-4">
+            When a planet crosses in front of its star (like a mini-eclipse), it blocks a tiny amount of light - 
+            sometimes less than 1%! These dips in brightness create a pattern called a "light curve." 
+            Celara uses artificial intelligence to analyze thousands of these light curves and determine 
+            which ones are most likely caused by planets rather than other phenomena.
+        </p>
+        
+        <!-- How does it work? (Beginner-friendly) -->
+        <h4 class="mt-4 mb-3"><i class="bi bi-gear-fill"></i> How Does It Work?</h4>
+        
+        <p class="mb-4">
+            <strong>Step 1: Get the Data</strong><br>
+            You can upload data in three ways: a spreadsheet with planet measurements, raw telescope data files, 
+            or just type in a planet candidate number and Celara will download the data automatically from NASA.
+        </p>
+        
+        <p class="mb-4">
+            <strong>Step 2: AI Analysis</strong><br>
+            Celara's "brain" (a neural network) examines the light patterns. It's been trained on thousands of 
+            examples of real planets and false alarms, so it learns to spot the difference.
+        </p>
+        
+        <p class="mb-4">
+            <strong>Step 3: Results</strong><br>
+            You get a percentage score for each candidate - higher scores mean "more likely to be a planet." 
+            Celara also shows you graphs and statistics to help you understand what it found.
+        </p>
+        
+        <!-- Advanced Technical Details -->
+        <h4 class="mt-5 mb-3"><i class="bi bi-cpu-fill"></i> Advanced Technical Details</h4>
+        
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>For Developers & Researchers:</strong> The following section contains technical implementation details.
+        </div>
+        
+        <p class="mb-3">
+            <strong>Neural Network Architecture:</strong> Celara implements a multi-modal deep learning approach 
+            based on Google's AstroNet, combining three specialized branches:
+        </p>
+        
+        <ul class="mb-4">
+            <li><strong>Local View Branch:</strong> 1D ResNet processing 201-point folded light curves focused on transit windows</li>
+            <li><strong>Global View Branch:</strong> 1D ResNet analyzing 2001-point full orbital period data</li>
+            <li><strong>Auxiliary Branch:</strong> Dense layers processing stellar parameters (radius, temperature, SNR)</li>
+        </ul>
+        
+        <p class="mb-3">
+            <strong>Model Specifications:</strong> The network uses approximately 71,000 parameters with Global Average Pooling 
+            for computational efficiency. Feature extraction creates a 2206-dimensional space combining temporal patterns 
+            and astrophysical constraints. Confidence scoring provides prediction reliability based on distance from the decision boundary 
+            Bayesian approximation.
+        </p>
+        
+        <p class="mb-3">
+            <strong>Data Pipeline:</strong> Built with Python scientific stack including Lightkurve for NASA mission data handling, 
+            Astropy for coordinate transformations and FITS processing, and Pandas for tabular data manipulation. 
+            Supports Kepler/K2 and TESS light curves with automatic detrending and normalization.
+        </p>
+        
+        <p class="mb-4">
+            <strong>Web Infrastructure:</strong> Flask backend with RESTful API design, Bootstrap 5 responsive frontend, 
+            WebSocket integration for real-time progress updates, and containerized deployment options. 
+            Includes automated testing pipeline and CI/CD integration.
+        </p>
+        
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-github me-2"></i>
+            <strong>Open Source:</strong> The complete source code, model architecture, and training notebooks 
+            are available on GitHub, following reproducible research practices and scientific transparency principles.
+        </div>
+    </div>
+</div>
+{% endblock %}

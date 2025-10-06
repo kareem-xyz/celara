@@ -127,7 +127,7 @@ def process_kepler_dataset(df, lightcurve_dir, max_samples=None, path="data", sa
                 continue
         print(f"File index: {len(file_index)} files")
     else:
-        print(f"❌ Lightcurve directory not found: {lightcurve_dir}")
+        print(f"Lightcurve directory not found: {lightcurve_dir}")
         return None, None
     
     # Filter to available files only
@@ -136,7 +136,7 @@ def process_kepler_dataset(df, lightcurve_dir, max_samples=None, path="data", sa
     print(f"Available lightcurves: {len(df_available)}/{len(df)}")
     
     if len(df_available) == 0:
-        print("❌ No matching lightcurve files found")
+        print("No matching lightcurve files found")
         return None, None
     
     # Process all available samples
@@ -176,12 +176,12 @@ def process_kepler_dataset(df, lightcurve_dir, max_samples=None, path="data", sa
         save_path = f'{path}/{save_name}.npz'
         np.savez(save_path, X=X, y=y)
         
-        print(f"✅ Successfully processed {len(X)} samples")
+        print(f"Successfully processed {len(X)} samples")
         print(f"   Shape: {X.shape}")
         print(f"   Labels: {np.bincount(y)} (0=FP, 1=Confirmed)")
         print(f"   Saved: {save_path}")
         
         return X, y
     else:
-        print("❌ No samples processed successfully")
+        print("No samples processed successfully")
         return None, None
