@@ -1,6 +1,0 @@
-Simple ResNet CNN for Exoplanet Detection
-Parameters: 278,897
-Test Accuracy: 0.5000
-Test Precision: 0.5000
-Test Recall: 1.0000
-Test AUC: 0.0000
